@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-HDF5ファイル読み込みユーティリティ
+データ操作ユーティリティ
 """
 
 import os
@@ -8,7 +8,53 @@ import h5py
 import numpy as np
 import csv
 import matplotlib.pyplot as plt
+import json
 from typing import Union, Optional, Dict, List
+
+
+data_info = {
+    "act": {
+        "name": "Activity", 
+        "unit": "g", 
+        "color": "blue",
+        "descriptions": [
+            "Raw acceleration in x-axis (32Hz*15min)",
+            "Raw acceleration in y-axis (32Hz*15min)", 
+            "Raw acceleration in z-axis (32Hz*15min)",
+            "Body movement vector magnitude (32Hz*15min)",
+            "Gravity component of x-axis acceleration (32Hz*15min)",
+            "Gravity component of y-axis acceleration (32Hz*15min)",
+            "Gravity component of z-axis acceleration (32Hz*15min)",
+            "Body movement component in x-axis (32Hz*15min)",
+            "Body movement component in y-axis (32Hz*15min)",
+            "Body movement component in z-axis (32Hz*15min)"
+        ]
+    },
+    "eda": {
+        "name": "Electrodermal Activity", 
+        "unit": "μS", 
+        "color": "green",
+        "descriptions": [
+            "Skin potential data before emotion measurement (4Hz*15min)"
+        ]
+    },
+    "rri": {
+        "name": "RR Interval", 
+        "unit": "seconds", 
+        "color": "red",
+        "descriptions": [
+            "Heart rate interval data before emotion measurement (4Hz*15min)"
+        ]
+    },
+    "temp": {
+        "name": "Temperature", 
+        "unit": "°C", 
+        "color": "orange",
+        "descriptions": [
+            "Skin temperature data before emotion measurement (4Hz*15min)"
+        ]
+    }
+}
 
 
 def load_h5_data(file_path: str, dataset_name: Optional[str] = None) -> np.ndarray:
@@ -105,12 +151,12 @@ def load_csv_data(file_path: str, encoding: str = 'utf-8') -> List[Dict[str, str
         raise ValueError(f"CSVファイルの読み込みに失敗しました: {file_path}、エラー: {str(e)}")
 
 
-def search_data(subID=None, date=None, valence=None, arousal=None):
-    """条件に一致するデータを検索して統合データのリストを返す"""
+def search_data(subID=None, date=None, valence=None, arousal=None, data_kinds=["act", "eda", "rri", "temp"]):
+    # """条件に一致するデータを検索して統合データのリストを返す"""
     DATA_PATH = "/home/mori/projects/affective-forecast/datas"
     timestamp_path = "meta_data/timestamp.csv"
     timestamp_data = load_csv_data(f"{DATA_PATH}/{timestamp_path}")
-    
+
     integrated_data = []
     
     for v in timestamp_data:
@@ -121,8 +167,10 @@ def search_data(subID=None, date=None, valence=None, arousal=None):
         
         if (subID is not None and _subID != subID) or (date is not None and _date != date) or (valence is not None and _valence != valence) or (arousal is not None and _arousal != arousal):
             continue
-            
-        act, eda, rri, temp = tuple(f"data_{v['index']}_E4_{kind}.h5" for kind in ["act", "eda", "rri", "temp"])
+        
+        filtered_kinds = [kind if kind in data_kinds else "" for kind in ["act", "eda", "rri", "temp"]]
+
+        act, eda, rri, temp = tuple(f"data_{v['index']}_E4_{kind}.h5" for kind in filtered_kinds)
         act_data, eda_data, rri_data, temp_data = tuple(load_h5_data(f"{DATA_PATH}/biometric_data/{fn}") for fn in [act, eda, rri, temp])
         
         integrated_data.append({
@@ -131,9 +179,9 @@ def search_data(subID=None, date=None, valence=None, arousal=None):
             "valence": _valence,
             "arousal": _arousal,
             "exist_data": (
-                act_data is not None and
-                eda_data is not None and
-                rri_data is not None and
+                act_data is not None or
+                eda_data is not None or
+                rri_data is not None or
                 temp_data is not None
             ),
             "act_data": act_data,
@@ -145,77 +193,63 @@ def search_data(subID=None, date=None, valence=None, arousal=None):
     return integrated_data
 
 
-def plot_wave(data, data_kind, data_row=0, save_at=None):
-    """バイオメトリックデータの波形を描画する"""
-    if not data["exist_data"]:
-        print("データが存在しません")
-        return False
-    
-    # データ種別に応じた詳細情報を設定
-    data_info = {
-        "act": {
-            "name": "Activity", 
-            "unit": "g", 
-            "color": "blue",
-            "descriptions": [
-                "Raw acceleration in x-axis (32Hz*15min)",
-                "Raw acceleration in y-axis (32Hz*15min)", 
-                "Raw acceleration in z-axis (32Hz*15min)",
-                "Body movement vector magnitude (32Hz*15min)",
-                "Gravity component of x-axis acceleration (32Hz*15min)",
-                "Gravity component of y-axis acceleration (32Hz*15min)",
-                "Gravity component of z-axis acceleration (32Hz*15min)",
-                "Body movement component in x-axis (32Hz*15min)",
-                "Body movement component in y-axis (32Hz*15min)",
-                "Body movement component in z-axis (32Hz*15min)"
-            ]
-        },
-        "eda": {
-            "name": "Electrodermal Activity", 
-            "unit": "μS", 
-            "color": "green",
-            "descriptions": [
-                "Skin potential data before emotion measurement (4Hz*15min)"
-            ]
-        },
-        "rri": {
-            "name": "RR Interval", 
-            "unit": "seconds", 
-            "color": "red",
-            "descriptions": [
-                "Heart rate interval data before emotion measurement (4Hz*15min)"
-            ]
-        },
-        "temp": {
-            "name": "Temperature", 
-            "unit": "°C", 
-            "color": "orange",
-            "descriptions": [
-                "Skin temperature data before emotion measurement (4Hz*15min)"
-            ]
-        }
-    }
-    
-    info = data_info.get(data_kind, {"name": data_kind.upper(), "unit": "", "color": "blue", "descriptions": ["Unknown data"]})
-    
-    # data_rowに対応する説明を取得
-    description = info["descriptions"][data_row] if data_row < len(info["descriptions"]) else f"Row {data_row} data"
-    
-    x = np.linspace(0, 15, data[f"{data_kind}_data"].shape[1])
-    y = data[f"{data_kind}_data"][data_row]
+def plot_15minutes_waves(datas, data_kind, data_row=0, data_range=None, save_at=None):
+    """横軸:15分間 縦軸:指定した生体データの値 で波形を描画する"""
+
+    plt.figure(figsize=(12, 8))
+
+    for data in datas:
+        if not data["exist_data"]:
+            print("データが存在しません")
+            plt.close()
+            return False
+        
+        # データ種別に応じた詳細情報を設定
+        
+        info = data_info.get(data_kind, {"name": data_kind.upper(), "unit": "", "color": "blue", "descriptions": ["Unknown data"]})
+        
+        # data_rowに対応する説明を取得
+        description = info["descriptions"][data_row] if data_row < len(info["descriptions"]) else f"Row {data_row} data"
+        
+        x = np.linspace(0, 15, data[f"{data_kind}_data"].shape[1])
+        y = data[f"{data_kind}_data"][data_row]
+        
+        plt.plot(x, y, color=info["color"], linewidth=1.5)
+        plt.ylim(data_range[0], data_range[1])
+        plt.xlabel("Time (minutes)")
+        plt.ylabel(f"{info['name']} ({info['unit']})")
+        plt.grid(True, alpha=0.3)
+        plt.title(f"{info['name']} Waveform - Subject {data['subID']} ({data['date']})\nValence: {data['valence']}, Arousal: {data['arousal']}")
+        
+        # データの説明をグラフ下部に追加
+        plt.figtext(0.1, 0.02, f"Data: {description}", fontsize=10, style='italic')
+        
+        plt.tight_layout()
+        plt.subplots_adjust(bottom=0.1)  # 下部の余白を調整
+
+    if save_at is not None:
+        plt.savefig(save_at)
+        plt.close()
+    else:
+        plt.show()
+
+    return True
+
+def draw_hist(data, bins, x_label=None, y_label=None, title=None, description=None, save_at=None):
+    """横軸:データの値 縦軸:度数 でヒストグラムを描画する"""
     
     plt.figure(figsize=(12, 8))
-    plt.plot(x, y, color=info["color"], linewidth=1.5)
-    plt.xlabel("Time (minutes)")
-    plt.ylabel(f"{info['name']} ({info['unit']})")
-    plt.grid(True, alpha=0.3)
-    plt.title(f"{info['name']} Waveform - Subject {data['subID']} ({data['date']})\nValence: {data['valence']}, Arousal: {data['arousal']}")
-    
+    plt.hist(data, bins=bins)
+    plt.xlabel(f"{x_label}")
+    plt.ylabel(f"{y_label}")
+    plt.title(f"Histgram - {title}")
+
     # データの説明をグラフ下部に追加
-    plt.figtext(0.1, 0.02, f"Data: {description}", fontsize=10, style='italic')
+    if description is not None:
+        plt.figtext(0.1, 0.02, f"Description: {description}", fontsize=10, style='italic')
     
     plt.tight_layout()
-    plt.subplots_adjust(bottom=0.1)  # 下部の余白を調整
+    plt.subplots_adjust(bottom=0.1)
 
     if save_at is not None:
         plt.savefig(save_at)
@@ -224,3 +258,22 @@ def plot_wave(data, data_kind, data_row=0, save_at=None):
 
     return True
 
+def object_to_json(obj, save_at=None):
+    """オブジェクトをファイルに保存"""
+    # ディレクトリが存在しない場合は作成
+    os.makedirs(os.path.dirname(save_at), exist_ok=True)
+    
+    with open(save_at, "w", encoding="utf-8") as f: 
+        json.dump(obj, f, indent=2, ensure_ascii=False)
+    print(f"Object saved to {save_at}")
+
+def object_from_json(load_from=None):
+    """JSONファイルからオブジェクトを読み込み"""
+    # ファイルが存在するかチェック
+    if not os.path.exists(load_from):
+        raise FileNotFoundError(f"File not found: {load_from}")
+    
+    with open(load_from, "r", encoding="utf-8") as f:
+        obj = json.load(f)
+    print(f"Object loaded from {load_from}")
+    return obj
