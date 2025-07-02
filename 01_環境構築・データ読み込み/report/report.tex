@@ -1,0 +1,204 @@
+% !TEX TS-program = xelatex
+% !TEX encoding = UTF-8 Unicode
+
+\documentclass[a4paper,11pt]{article}
+
+% 日本語フォント
+\usepackage{xeCJK}
+\setCJKmainfont{IPAexGothic}
+
+% 余白・段落
+\usepackage[a4paper,margin=25mm]{geometry}
+\usepackage{parskip}               % 段落間の余白
+\setlength{\parindent}{0pt}        % 行頭インデントなし
+
+% 箇条書き「・」
+\usepackage{enumitem}
+\setlist[itemize,1]{label=・, left=0pt, nosep}
+
+% セクション間の余白を微調整
+\usepackage{titlesec}
+
+\usepackage{listings}
+\usepackage{xcolor}
+
+\lstset{
+  language=Python,
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  columns=fullflexible,
+  inputencoding=utf8,
+  keywordstyle=\color{blue},
+  commentstyle=\color{gray},
+  stringstyle=\color{teal},
+  showstringspaces=false,
+}
+\titlespacing*{\subsection}{0pt}{9ex}{1ex}
+
+\begin{document}
+
+%―――――――――――――――――――――――――――――――――――――――
+% タイトルブロック
+\begin{center}
+  {\LARGE \bfseries ウェアラブル端末と心理入力アプリデータを統合した\\感情予測アルゴリズムの開発}\\[6ex]
+\end{center}
+
+\hrule\vspace{1ex}
+{\normalsize 2025-06-13 進捗報告 \hfill 森雄大}\\
+\hrule\vspace{5ex}
+
+\section*{1. はじめに}
+% 背景
+\subsection*{研究の背景}
+過度な「怒り・イライラ・焦燥感・不安・抑うつ」は、放置すると心身の疾患や対人トラブル、生産性低下を招く。  
+自他ともに感情変化を捉えにくいことが、早期ケアを難しくしている。
+
+% 先行研究
+\subsection*{先行研究}
+\begin{itemize}
+  \item 外部研究（在宅勤務者30名）：  
+        脳波・心電図・呼吸数・動作量と心理指標を同時取得し、  
+        ネガティブ感情と生体信号の相関を示した。
+  \item 中村教授による大規模データ計測：  
+        上記先行研究の知見を踏まえ、対象人数・測定項目を大幅に拡充。  
+        大規模データセットを新たに収集。
+\end{itemize}
+
+% 研究の立ち位置
+\subsection*{私の研究の立ち位置と目的}
+教授が収集した大規模データ  
+（心拍数・呼吸数・活動量・皮膚電気反応など）を使わせていただき解析を行う。  
+私が設定した目的は、  
+ウェアラブル端末だけでリアルタイムに  
+ネガティブ／ポジティブの感情を高精度予測できる  
+アルゴリズムを構築し、セルフケアに役立つ仕組みを提供すること。
+
+% 期待される成果
+\subsection*{期待される成果}
+\begin{itemize}
+  \item 利用者が自分のメンタル状態を「見える化」できるセルフケアツール
+  \item 家族・職場との円滑な感情共有による早期サポート
+  \item 生理心理学とメンタルヘルス技術の発展への寄与
+\end{itemize}
+
+\newpage
+\section*{2. データ収集と解析の概要}
+%―――――――――――――――――――――――――――――――――――――――
+% データ収集・解析の概要
+\subsection*{データの概要}
+提供いただいた生体計測データはすべてEmpatica製E4リストバンドによる計測データであった。各被験者には以下の4種類のデータファイルが用意されており、心理入力アプリで感情を入力する直前15分のデータが全入力分含まれていると思われる。
+
+1. 運動データ（加速度）
+
+2. 皮膚表面温度データ
+
+3. 心拍数データ
+
+4. 皮膚電位活動データ
+
+併せて、感情状態の入力タイミングをまとめたExcelシートも提供されており、1被験者あたり約15日間、1日約6回（午前9時～午後8時）ほど入力が行われている。被験者数は資料上で約150～270名との記載あり。1被験者あたりの入力回数は概ね100回前後とみられる。
+
+
+感情状態の定量化には、
+
+A. 外山美樹氏による楽観・悲観性尺度アンケート（個人の心理傾向を測定）
+
+B. ラッセルの円環モデルに基づく９×９グリッドでのリアルタイム入力
+
+の2手法が想定されているが、今回いただいたデータに含まれていたのはBの入力データのみであった。個人特性を考慮した汎用モデル構築には、Aのアンケート結果の利用が必要と考えられるので、データが取得済みであればぜひ解析に使用させていただきたいです。
+
+
+\subsection*{データの形式}
+IDが2のデータを用いて、計測データの形式を確認した。
+% HDF5 ファイル概要（表形式で見やすく）
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{|l|l|c|l|}
+    \hline
+    \textbf{File} & \textbf{Dataset} & \textbf{Shape} & \textbf{Dtype} \\ \hline
+    \texttt{data\_2\_E4\_act.h5} & \texttt{E4} & (10, 28799) & float64 \\ \hline
+    \texttt{data\_2\_E4\_eda.h5} & \texttt{E4} & (1, 3599)   & float64 \\ \hline
+    \texttt{data\_2\_E4\_rri.h5} & \texttt{E4} & (1, 3600)   & float64 \\ \hline
+    \texttt{data\_2\_E4\_temp.h5} & \texttt{E4} & (1, 3599)   & float64 \\ \hline
+  \end{tabular}
+  %\caption{サンプル HDF5 ファイルのデータ概要}
+  %\label{tab:h5_overview}
+\end{table}
+
+例えば、皮膚表面温度データであるtempは、4Hzでデータ取得をしている。約3600個のデータがあるということは、15分間のデータである。
+つまり、このデータは被験者1（S01）の2回目の感情入力タイミングの直前15分の皮膚表面温度の時系列データである。
+
+
+
+\newpage
+\subsection*{データの読み込み方法}
+以下のようなコードでh5ファイルの読み込みを行う。
+
+\vspace{5ex}\hrule\vspace{1ex}
+\begin{lstlisting}[language=Python, caption={HDF5ファイル読み込み関数}, label={lst:list_h5}]
+import os
+import h5py
+
+def list_and_preview_h5_files(directory="sample", preview_shape=(2, 5)):
+    """
+    指定ディレクトリ内のすべての .h5 ファイルを走査し、
+    各データセットの形状と冒頭の一部データを表示します。
+    """
+    for fname in sorted(os.listdir(directory)):
+        if not fname.endswith(".h5"):
+            continue
+        filepath = os.path.join(directory, fname)
+        print(f"\n=== File: {fname} ===")
+        with h5py.File(filepath, "r") as f:
+            for dset_name, dset in f.items():
+                data = dset[()]
+                print(f"- Dataset '{dset_name}': shape={data.shape}, dtype={data.dtype}")
+
+if __name__ == "__main__":
+    list_and_preview_h5_files()
+\end{lstlisting}
+\vspace{1ex}\hrule\vspace{1ex}
+
+\newpage
+\subsection*{全データの詳細}
+以下に、データの形状や値の単位などのメタデータを表形式でまとめる。
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{|l|l|c|l|}
+    \hline
+    \textbf{ファイル名} & \textbf{説明} & \textbf{データの長さ} & \textbf{単位} \\ \hline
+    \texttt{data\_N\_E4\_act.h5} & \texttt{x軸方向の生加速度（32Hz*15min）} & 28799 & 不明 \\ \hline
+    \texttt{} & \texttt{y軸方向の生加速度（32Hz*15min）} & 28799 & 不明 \\ \hline
+    \texttt{} & \texttt{z軸方向の生加速度（32Hz*15min）} & 28799 & 不明 \\ \hline
+    \texttt{} & \texttt{身体運動ベクトルの大きさ（32Hz*15min）} & 28799 & 不明 \\ \hline
+    \texttt{} & \texttt{x軸方向の加速度の重力成分（32Hz*15min）} & 28799 & 不明 \\ \hline
+    \texttt{} & \texttt{y軸方向の加速度の重力成分（32Hz*15min）} & 28799 & 不明 \\ \hline
+    \texttt{} & \texttt{z軸方向の加速度の重力成分（32Hz*15min）} & 28799 & 不明 \\ \hline
+    \texttt{} & \texttt{x軸方向の身体運動成分（32Hz*15min）} & 28799 & 不明 \\ \hline
+    \texttt{} & \texttt{y軸方向の身体運動成分（32Hz*15min）} & 28799 & 不明 \\ \hline
+    \texttt{} & \texttt{z軸方向の身体運動成分（32Hz*15min）} & 28799 & 不明 \\ \hline
+
+    \texttt{data\_N\_E4\_eda.h5} & \texttt{感情計測直前の皮膚電位データ（4Hz*15min）} & (1, 3599)   & 不明 \\ \hline
+    \texttt{data\_N\_E4\_rri.h5} & \texttt{感情計測直前の心拍間隔データ（4Hz*15min）} & (1, 3600)   & 秒 \\ \hline
+    \texttt{data\_N\_E4\_temp.h5} & \texttt{感情計測直前の皮膚温度データ（4Hz*15min）} & (1, 3599)   & 摂氏温度 \\ \hline
+  \end{tabular}
+  %\caption{サンプル HDF5 ファイルのデータ概要}
+  %\label{tab:h5_overview}
+\end{table}
+
+
+対応するタイムスタンプのデータは、「all-grid-data-extracted2025」から取得できる。
+計測ファイル名が「data-N-E4-act.h5」であれば対応するタイムスタンプはシートのN行目を参照すればよい。
+
+\subsection*{簡易解析}
+全被験者のデータをもとに簡単な解析を行う予定だったが、実行環境への全計測データのコピーが丸一日以上かかるため間に合わなかった。次回のToDoとする。
+
+\subsection*{次回のToDo}
+\begin{itemize}
+  \item データの傾向を理解するための簡単な解析（一日の計測頻度の分散等）
+  \item どんな回帰による予測が良いか、データの性質を踏まえて考察
+\end{itemize}
+
+
+
+\end{document}
