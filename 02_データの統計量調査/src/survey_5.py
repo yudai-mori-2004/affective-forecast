@@ -88,7 +88,7 @@ def search_data_by_query(data_kind, act_kind, queries):
     print(f"[DEBUG] Starting data filtering...")
     processed_count = 0
     matched_count = 0
-    MAX_RECORDS = 500  # メモリ不足を防ぐための上限
+    MAX_RECORDS = 100  # メモリ不足を防ぐための上限
     
     for data in timestamp_data:
         processed_count += 1
@@ -133,7 +133,7 @@ def search_data_by_query(data_kind, act_kind, queries):
             _h5_cache[file_key] = load_h5_data(f"{DATA_PATH}/biometric_data/data_{data['index']}_E4_{data_kind}.h5")
         
         wave_datas = _h5_cache[file_key]
-        field_name = f"{data_kind}{"_" if act_kind != "" else ""}{act_kind}"
+        field_name = f"{data_kind}{"_" if act_kind is not None else ""}{act_kind}"
         wave_data = None if wave_datas is None else wave_datas[0] if act_kind == "" else wave_datas[act_kinds.index(act_kind)]
 
         if wave_data is not None and segment_values is not None:
@@ -163,79 +163,15 @@ def search_data_by_query(data_kind, act_kind, queries):
     print(f"[DEBUG] Valid data count: {len([d for d in integrated_data if d['exist_data']])}")
     print(f"[DEBUG] Invalid data count: {len([d for d in integrated_data if not d['exist_data']])}")
     
+    # キャッシュサイズ監視
+    if len(_h5_cache) > 100:
+        print(f"[WARNING] H5 cache size: {len(_h5_cache)} files. Consider clearing cache.")
+    
     return integrated_data
 
 
 
-def parse_queries(queries):
-    if queries == []:
-        return {}
-    
-    if isinstance(queries[0], str):
-        flat_queries = queries  # すでに平坦
-    else:
-        flat_queries = []
-        for query_group in queries:
-            flat_queries.extend(query_group)
 
-    grouped_queries = {}
-    for query in flat_queries:
-        prefix = query[0]
-        if prefix not in grouped_queries:
-            grouped_queries[prefix] = []
-        grouped_queries[prefix].append(query)
-    
-    result = {}  # ←これを追加
-    
-    for prefix, query_list in grouped_queries.items():
-        if prefix == 'c':
-            values = []
-            for query in query_list:
-                range_str = query[1:]
-                if '~' in range_str:
-                    start, end = range_str.split('~')
-                    values.append([int(start), int(end)])
-                else:
-                    values.append(int(range_str))
-            result[prefix] = values  # ←これを追加
-            
-        elif prefix in ['v', 'a']:
-            values = []
-            for query in query_list:
-                range_str = query[1:]
-                if '~' in range_str:
-                    start, end = range_str.split('~')
-                    values.append([int(start), int(end)])
-                else:
-                    values.append(int(range_str))
-            result[prefix] = values  # ←これを追加
-            
-        elif prefix == 't':
-            values = []
-            for query in query_list:
-                time_str = query[1:]
-                if '~' in time_str:
-                    start_time, end_time = time_str.split('~')
-                    start_hour = int(start_time.split(':')[0])
-                    end_hour = int(end_time.split(':')[0])
-                    values.append([start_hour, end_hour])
-                else:
-                    hour = int(time_str.split(':')[0])
-                    values.append(hour)
-            result[prefix] = values  # ←これを追加
-            
-        elif prefix == 's':
-            values = []
-            for query in query_list:
-                segment_str = query[1:]
-                if '~' in segment_str:
-                    start, end = segment_str.split('~')
-                    values.append([int(start), int(end)])
-                else:
-                    values.append(int(segment_str))
-            result[prefix] = values  # ←これを追加
-            
-    return result  # ←これを追加
 
 
 
@@ -672,4 +608,5 @@ def write_batch_to_csv(batch_statistics, csv_file_path, file_exists):
             writer.writerow(row)
 
 if __name__ == "__main__":
-   process_statistics_analysis()
+   #process_statistics_analysis()
+   print(search_data_by_query("rri","",["c700~1000"]))
