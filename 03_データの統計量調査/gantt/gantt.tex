@@ -1,0 +1,73 @@
+% !TEX program = xelatex
+% !TEX encoding = UTF-8 Unicode
+\documentclass[a4paper,11pt]{article}
+\usepackage{geometry}
+\geometry{left=10mm,right=10mm,top=15mm,bottom=15mm}
+
+\usepackage{xeCJK}
+\setCJKmainfont{IPAexGothic}
+
+\usepackage{pgfgantt}
+
+\begin{document}
+
+\subsection*{マイルストーンのガントチャート}
+\thispagestyle{empty}
+
+% 横幅にフィット
+\noindent\resizebox{\textwidth}{!}{%
+  \begin{ganttchart}[
+      time slot format=isodate-yearmonth,
+      time slot unit=month,
+      compress calendar,
+      x unit=1.05cm,                % 月幅調整
+      y unit title=0.7cm,
+      y unit chart=0.6cm,
+      title label font=\bfseries\small,
+      bar label font=\small,
+      group label font=\small,
+      milestone label font=\small,
+      vgrid, hgrid,
+      title/.append style={draw=none, fill=none},
+      group/.append style={draw=black, fill=black!10},
+      bar/.append style={fill=black!30},
+      milestone/.append style={fill=black}
+    ]{2025-06}{2026-03}
+
+    % 年＋月ラベル
+    \gantttitlecalendar{year, month=shortname} \\
+
+    % 6月：モデルパターン設計
+    \ganttgroup{モデル設計}{2025-06}{2025-06} \\
+    \ganttbar{複数パターン設計}{2025-06}{2025-06} \\
+
+    % 7月：第1フェーズ
+    \ganttgroup{第1フェーズ}{2025-07}{2025-07} \\
+    \ganttbar{実装・実行}{2025-07}{2025-07} \\
+    \ganttbar{評価・フィードバック}{2025-07}{2025-07} \\
+
+    % 8月：再設計＆第2フェーズ
+    \ganttgroup{第2フェーズ準備}{2025-08-01}{2025-08-15} \\
+    \ganttbar{再設計}{2025-08-01}{2025-08-15} \\
+    \ganttgroup{第2フェーズ実装}{2025-08-16}{2025-08-31} \\
+    \ganttbar{実装・実行}{2025-08-16}{2025-08-31} \\
+
+    % 9月上旬：評価
+    \ganttgroup{評価・フィードバック}{2025-09-01}{2025-09-15} \\
+    \ganttbar{評価・フィードバック}{2025-09-01}{2025-09-15} \\
+
+    % 以降：最適化
+    \ganttgroup{最適化・再設計}{2025-09-16}{2025-11-30} \\
+    \ganttbar{チューニング・再設計}{2025-09-16}{2025-11-30} \\
+
+    % 12月：論文執筆開始
+    \ganttgroup{論文執筆}{2025-12}{2025-12} \\
+    \ganttbar{執筆開始}{2025-12}{2025-12} \\
+
+    % マイルストーン：論文発表
+    \ganttmilestone{論文発表（2月）}{2026-02}
+
+  \end{ganttchart}%
+}
+
+\end{document}
