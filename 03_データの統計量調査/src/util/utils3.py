@@ -328,6 +328,8 @@ def get_filenames_from_uuids(uuids: List[str]) -> List[str]:
     return filenames
 
 
+
+
 def search_and_get_filenames(search_conditions: Dict) -> List[str]:
     """
     検索条件に基づいてマッチするファイル名のリストを取得
@@ -398,3 +400,46 @@ def load_h5_data(file_path: str, dataset_name: Optional[str] = None) -> np.ndarr
     except Exception as e:
         return None
 
+
+def draw_hist(data, bins, x_label=None, y_label=None, title=None, description=None, save_at=None):
+    """横軸:データの値 縦軸:度数 でヒストグラムを描画する"""
+    
+    plt.figure(figsize=(12, 8))
+    plt.hist(data, bins=bins)
+    plt.xlabel(f"{x_label}")
+    plt.ylabel(f"{y_label}")
+    plt.title(f"Histgram - {title}")
+
+    # データの説明をグラフ下部に追加
+    if description is not None:
+        plt.figtext(0.1, 0.02, f"Description: {description}", fontsize=10, style='italic')
+    
+    plt.tight_layout()
+    plt.subplots_adjust(bottom=0.1)
+
+    if save_at is not None:
+        plt.savefig(save_at)
+    else:
+        plt.show()
+
+    return True
+
+def object_to_json(obj, save_at=None):
+    """オブジェクトをファイルに保存"""
+    # ディレクトリが存在しない場合は作成
+    os.makedirs(os.path.dirname(save_at), exist_ok=True)
+    
+    with open(save_at, "w", encoding="utf-8") as f: 
+        json.dump(obj, f, indent=2, ensure_ascii=False)
+    print(f"Object saved to {save_at}")
+
+def object_from_json(load_from=None):
+    """JSONファイルからオブジェクトを読み込み"""
+    # ファイルが存在するかチェック
+    if not os.path.exists(load_from):
+        raise FileNotFoundError(f"File not found: {load_from}")
+    
+    with open(load_from, "r", encoding="utf-8") as f:
+        obj = json.load(f)
+    print(f"Object loaded from {load_from}")
+    return obj
