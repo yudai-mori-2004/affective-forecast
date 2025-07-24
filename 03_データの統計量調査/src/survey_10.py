@@ -24,7 +24,7 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from util.utils3 import is_time_of_day_match
+from util.utils3 import get_hour_from_unix_time, is_time_of_day_match
 
 # ---------- パス設定 ----------
 BASE_DIR   = "/home/mori/projects/affective-forecast"
@@ -35,67 +35,63 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 CSV_PATH   = os.path.join(OUTPUT_DIR, "va_long.csv")
 JSON_PATH  = os.path.join(OUTPUT_DIR, "va_lmm.json")
 
-# ---------- インデックス読み込み ----------
-with open(os.path.join(INDEX_DIR, "datetime.json"), "r", encoding="utf-8") as f:
-    dt_index = json.load(f)
-with open(os.path.join(INDEX_DIR, "ex-term.json"), "r", encoding="utf-8") as f:
-    term_index = json.load(f)
-with open(os.path.join(INDEX_DIR, "study_id.json"), "r", encoding="utf-8") as f:
-    stud_index = json.load(f)
-with open(os.path.join(INDEX_DIR, "valence.json"), "r", encoding="utf-8") as f:
-    val_index = json.load(f)
-with open(os.path.join(INDEX_DIR, "arousal.json"), "r", encoding="utf-8") as f:
-    aro_index = json.load(f)
+# # ---------- インデックス読み込み ----------
+# with open(os.path.join(INDEX_DIR, "datetime.json"), "r", encoding="utf-8") as f:
+#     dt_index = json.load(f)
+# with open(os.path.join(INDEX_DIR, "ex-term.json"), "r", encoding="utf-8") as f:
+#     term_index = json.load(f)
+# with open(os.path.join(INDEX_DIR, "study_id.json"), "r", encoding="utf-8") as f:
+#     stud_index = json.load(f)
+# with open(os.path.join(INDEX_DIR, "valence.json"), "r", encoding="utf-8") as f:
+#     val_index = json.load(f)
+# with open(os.path.join(INDEX_DIR, "arousal.json"), "r", encoding="utf-8") as f:
+#     aro_index = json.load(f)
 
-# uuid → 値 の dict を作成
-term_dict   = {d["uuid"]: d["field_value"] for d in term_index}
-stud_dict   = {d["uuid"]: d["field_value"] for d in stud_index}
-val_dict    = {d["uuid"]: d["field_value"] for d in val_index}
-aro_dict    = {d["uuid"]: d["field_value"] for d in aro_index}
-dt_dict = {
-    d["uuid"]: pd.to_datetime(d["field_value"], unit="s")
-    for d in dt_index
-}
+# # uuid → 値 の dict を作成
+# term_dict   = {d["uuid"]: d["field_value"] for d in term_index}
+# stud_dict   = {d["uuid"]: d["field_value"] for d in stud_index}
+# val_dict    = {d["uuid"]: d["field_value"] for d in val_index}
+# aro_dict    = {d["uuid"]: d["field_value"] for d in aro_index}
+# dt_dict = {
+#     d["uuid"]: get_hour_from_unix_time(d["field_value"])
+#     for d in dt_index
+# }
 
-# ---------- ロング形式データ生成 ----------
-rows = []
-for uuid, dt in dt_dict.items():
-    try:
-        term      = term_dict[uuid]
-        study_id  = stud_dict[uuid]
-        valence   = val_dict[uuid]
-        arousal   = aro_dict[uuid]
-    except KeyError:
-        # いずれか欠損ならスキップ
-        continue
+# # ---------- ロング形式データ生成 ----------
+# rows = []
+# for uuid, dt in dt_dict.items():
+#     term      = term_dict[uuid]
+#     study_id  = stud_dict[uuid]
+#     valence   = val_dict[uuid]
+#     arousal   = aro_dict[uuid]
 
-    subject_id = f"{term}{study_id}"
+#     subject_id = f"{term}{study_id}"
 
-    hr = dt.hour
-    bin_start = hr - (hr % 3)
-    bin_end   = (bin_start + 3) % 24
-    time_bin  = f"{bin_start:02d}:00-{bin_end:02d}:00"
+#     hr = dt
+#     bin_start = hr - (hr % 3)
+#     bin_end   = (bin_start + 3) % 24
+#     time_bin  = f"{bin_start:02d}:00-{bin_end:02d}:00"
 
-    rows.append((subject_id, time_bin, valence, arousal))
+#     rows.append((subject_id, time_bin, valence, arousal))
 
-df = pd.DataFrame(rows, columns=["subject_id", "time_bin", "valence", "arousal"])
-df["time_bin"] = pd.Categorical(df["time_bin"],
-                                categories=sorted(df["time_bin"].unique()),
-                                ordered=True)
+# df = pd.DataFrame(rows, columns=["subject_id", "time_bin", "valence", "arousal"])
+# df["time_bin"] = pd.Categorical(df["time_bin"],
+#                                 categories=sorted(df["time_bin"].unique()),
+#                                 ordered=True)
 
-# ---------- CSV 出力 ----------
-df.to_csv(CSV_PATH, index=False)
-print(f"[Python] CSV written: {CSV_PATH} ({len(df)} rows)")
+# # ---------- CSV 出力 ----------
+# df.to_csv(CSV_PATH, index=False)
+# print(f"[Python] CSV written: {CSV_PATH} ({len(df)} rows)")
 
-# ---------- Rscript 呼び出し ----------
-cmd = ["Rscript", os.path.join(os.path.dirname(__file__), "run_lmm.R"),
-       CSV_PATH, JSON_PATH]
-try:
-    subprocess.check_call(cmd)
-except subprocess.CalledProcessError as e:
-    print("Rscript execution failed:")
-    print(e)
-    raise SystemExit(1)
+# # ---------- Rscript 呼び出し ----------
+# cmd = ["Rscript", os.path.join(os.path.dirname(__file__), "run_lmm.R"),
+#        CSV_PATH, JSON_PATH]
+# try:
+#     subprocess.check_call(cmd)
+# except subprocess.CalledProcessError as e:
+#     print("Rscript execution failed:")
+#     print(e)
+#     raise SystemExit(1)
 
 # ---------- JSON 読み込み ----------
 with open(JSON_PATH, "r", encoding="utf-8") as f:
