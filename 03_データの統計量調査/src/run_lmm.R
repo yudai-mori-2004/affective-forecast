@@ -30,7 +30,7 @@ cat("time_bin levels:", paste(levels(dat$time_bin), collapse = ", "), "\n")
 
 # ---- モデルあてはめ関数 ----
 fit_one <- function(resp) {
-  frm <- as.formula(paste(resp, "~ time_bin + (1 + time_bin | subject)"))
+  frm <- as.formula(paste(resp, "~ time_bin + (1|subject_id)"))
   fit <- lmer(frm, data = dat, REML = TRUE)
   coefs     <- fixef(fit)
   intercept <- coefs["(Intercept)"]

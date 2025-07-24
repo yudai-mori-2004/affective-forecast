@@ -12,19 +12,26 @@ import matplotlib.pyplot as plt
 import json
 import hashlib
 import bisect
+from datetime import datetime, timezone, timedelta
 from typing import Union, Optional, Dict, List
 
-def to_unix_time(str_time):
-    s = str_time.strip("'")  # -> "2022-10-10 09:02:49"
-    # datetime オブジェクトにパース
-    dt = datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
-    # ローカルタイム系での Unix タイムスタンプを取得（float）
-    ts = dt.timestamp()
-    # 整数に
-    return int(ts)
 
+def to_unix_time(s: str,
+                     fmt: str = "%Y-%m-%d %H:%M:%S",
+                     tz_offset_hours: int = 9) -> int:
+    """
+    文字列 s を datetime にパースし、
+    tz_offset_hours をローカルタイムのオフセットとして解釈 → UTC エポック秒を返す
+    """
+    # ローカルタイムとしてパース
+    s = s.strip("'")
+    dt_local = datetime.strptime(s, fmt)
+    # UTC に換算
+    dt_utc = dt_local - timedelta(hours=tz_offset_hours)
+    # タイムゾーン付き UTC → エポック秒
+    return int(dt_utc.replace(tzinfo=timezone.utc).timestamp())
 
-def get_hour_from_unix_time(unix_time: int) -> int:
+def get_hour_from_unix_time(epoch: int,tz_offset_hours: int = 9) -> str:
     """
     Unix時刻から時間（0-23）を取得
     
@@ -34,8 +41,12 @@ def get_hour_from_unix_time(unix_time: int) -> int:
     Returns:
         int: 時間（0-23）
     """
-    dt = datetime.datetime.fromtimestamp(unix_time)
-    return dt.hour
+    # UTC の datetime
+    dt_utc = datetime.fromtimestamp(epoch, tz=timezone.utc)
+    # ローカルタイムに調整
+    dt_local = dt_utc + timedelta(hours=tz_offset_hours)
+    return dt_local.hour
+
 
 
 def is_time_of_day_match(unix_time: int, hour_condition) -> bool:
