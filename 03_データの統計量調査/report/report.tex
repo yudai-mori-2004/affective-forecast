@@ -2,25 +2,21 @@
 % !TEX encoding = UTF-8 Unicode
 
 \documentclass[a4paper,11pt]{article}
-
-% 日本語フォント
 \usepackage{xeCJK}
-\setCJKmainfont{IPAexGothic}
-
-% 余白・段落
+\setCJKmainfont{IPAexMincho}
+\setCJKsansfont{IPAexGothic}
+\setCJKmonofont{IPAexGothic}
 \usepackage[a4paper,margin=25mm]{geometry}
 \usepackage{parskip}               % 段落間の余白
 \setlength{\parindent}{0pt}        % 行頭インデントなし
-
-% 箇条書き「・」
 \usepackage{enumitem}
 \setlist[itemize,1]{label=・, left=0pt, nosep}
-
-% セクション間の余白を微調整
 \usepackage{titlesec}
-
 \usepackage{listings}
 \usepackage{xcolor}
+\usepackage[dvipdfmx]{graphicx}
+\usepackage{float}
+
 
 \lstset{
   language=Python,
@@ -47,165 +43,202 @@
 {\normalsize 2025-06-13 進捗報告 \hfill 森雄大}\\
 \hrule\vspace{5ex}
 
-\section*{1. T}
-% 背景
-\subsection*{研究の目的}
-目的は、ウェアラブル端末だけでリアルタイムに  
-ネガティブ／ポジティブの感情を高精度予測できる  
-アルゴリズムを構築し、セルフケアに役立つ仕組みを提供すること
-
-\subsection*{Todo}
-
-
-% \begin{itemize}
-%   \item ・生体データが欠落しているタイムスタンプ情報を除外し、生体データとタイムスタンプで一対一の対応関係をつける
-
-%   \item ・被験者ごとの計測回数の偏り
-%     \begin{itemize}
-%       \item ヒストグラムで被験者ごとの合計計測回数を可視化
-%       \item →大きく偏る被験者がいればサブサンプリングや重み付けで是正する必要がある
-%     \end{itemize}
-
-%   \item ・被験者×時間帯の測定タイミング偏り
-%     \begin{itemize}
-%       \item 縦軸＝被験者、横軸＝時間ビンのヒートマップを作成
-%       \item $\chi^2$独立性検定で「被験者と時間帯は独立（一様分布）」を検証
-%       \item →p<0.05 なら時間帯に偏りあり → ビンの結合やデータ補正を検討
-%     \end{itemize}
-
-%   \item ・被験者間パラメータ差の有無
-%     \begin{itemize}
-%       \item 被験者ごとのパラメータ分布をヒートマップで可視化
-%       \item 次の２つのモデルを比べて尤度比検定（LRT）を行う
-%         \begin{itemize}
-%           \item ・被験者ごとに同じ切片だけを持つモデル
-%           \item ・被験者ごとに異なる切片（ランダム切片）を持つモデル
-%         \end{itemize}
-%       \item ランダム切片の分散成分が有意（p<0.05）なら「被験者間に偏りあり」→共変量化や集約で補正
-%     \end{itemize}
-
-%   \item ・時間帯ビン間パラメータ差の有無
-%     \begin{itemize}
-%       \item 横軸＝時間ビン、縦軸＝パラメータ値のヒートマップで可視化
-%       \item 次の２つのモデルを比べて尤度比検定を行う
-%         \begin{itemize}
-%           \item ・被験者ごとの切片ずれのみを考慮したモデル
-%           \item ・上記に「時間帯」を説明変数として加えたモデル
-%         \end{itemize}
-%       \item p<0.05 なら「時間帯でパラメータに差あり」→モデルへの組み込みやビン再設定を検討
-%     \end{itemize}
-
-%   \item ・曜日間パラメータ差の有無
-%     \begin{itemize}
-%       \item 横軸＝曜日、縦軸＝パラメータ値のヒートマップ作成
-%       \item 次の２つのモデルを比べて尤度比検定を行う
-%         \begin{itemize}
-%           \item ・被験者ごとの切片ずれのみを考慮したモデル
-%           \item ・上記に「曜日」を説明変数として加えたモデル
-%         \end{itemize}
-%       \item p<0.05 なら「曜日でパラメータに差あり」→モデルへの組み込みや補正を検討
-%     \end{itemize}
-% \end{itemize}
-
-
 
 
 %―――――――――――――――――――――――――――――――――――――――
 % データ収集・解析の概要
-\subsection*{Friedman検定について}
-Friedman検定は「同じ被験者が複数条件を繰り返し測定している」場合のノンパラメトリック反復測定 ANOVA
+\subsection*{感情スコアの時間傾向}
+線形混合モデル（Linear Mixed Model, LMM）を使い、目的変数である感情スコアを固定効果とランダム効果で説明するモデルを構築した。
 
+\vspace{2ex}
+\noindent \textbf{【データ構造】}
 
-\subsection*{データの形式}
-IDが2のデータを用いて、計測データの形式を確認した。
-% HDF5 ファイル概要（表形式で見やすく）
-\begin{table}[ht]
-  \centering
-  \begin{tabular}{|l|l|c|l|}
-    \hline
-    \textbf{File} & \textbf{Dataset} & \textbf{Shape} & \textbf{Dtype} \\ \hline
-    \texttt{data\_2\_E4\_act.h5} & \texttt{E4} & (10, 28799) & float64 \\ \hline
-    \texttt{data\_2\_E4\_eda.h5} & \texttt{E4} & (1, 3599)   & float64 \\ \hline
-    \texttt{data\_2\_E4\_rri.h5} & \texttt{E4} & (1, 3600)   & float64 \\ \hline
-    \texttt{data\_2\_E4\_temp.h5} & \texttt{E4} & (1, 3599)   & float64 \\ \hline
-  \end{tabular}
-  %\caption{サンプル HDF5 ファイルのデータ概要}
-  %\label{tab:h5_overview}
-\end{table}
+感情スコアデータ一つ一つに、計測した時間帯カテゴリ（例：00:00–03:00）と被験者IDを紐づけ、データを被験者グループ単位で扱えるようにした。
 
-例えば、皮膚表面温度データであるtempは、4Hzでデータ取得をしている。約3600個のデータがあるということは、15分間のデータである。
-つまり、このデータは被験者1（S01）の2回目の感情入力タイミングの直前15分の皮膚表面温度の時系列データである。
+\vspace{2ex}
+\noindent \textbf{【モデル構造】}
 
-
-
-\newpage
-\subsection*{データの読み込み方法}
-以下のようなコードでh5ファイルの読み込みを行う。
-
-\vspace{5ex}\hrule\vspace{1ex}
-\begin{lstlisting}[language=Python, caption={HDF5ファイル読み込み関数}, label={lst:list_h5}]
-import os
-import h5py
-
-def list_and_preview_h5_files(directory="sample", preview_shape=(2, 5)):
-    """
-    指定ディレクトリ内のすべての .h5 ファイルを走査し、
-    各データセットの形状と冒頭の一部データを表示します。
-    """
-    for fname in sorted(os.listdir(directory)):
-        if not fname.endswith(".h5"):
-            continue
-        filepath = os.path.join(directory, fname)
-        print(f"\n=== File: {fname} ===")
-        with h5py.File(filepath, "r") as f:
-            for dset_name, dset in f.items():
-                data = dset[()]
-                print(f"- Dataset '{dset_name}': shape={data.shape}, dtype={data.dtype}")
-
-if __name__ == "__main__":
-    list_and_preview_h5_files()
-\end{lstlisting}
-\vspace{1ex}\hrule\vspace{1ex}
-
-\newpage
-\subsection*{全データの詳細}
-以下に、データの形状や値の単位などのメタデータを表形式でまとめる。
-\begin{table}[ht]
-  \centering
-  \begin{tabular}{|l|l|c|l|}
-    \hline
-    \textbf{ファイル名} & \textbf{説明} & \textbf{データの長さ} & \textbf{単位} \\ \hline
-    \texttt{data\_N\_E4\_act.h5} & \texttt{x軸方向の生加速度（32Hz*15min）} & 28799 & 不明 \\ \hline
-    \texttt{} & \texttt{y軸方向の生加速度（32Hz*15min）} & 28799 & 不明 \\ \hline
-    \texttt{} & \texttt{z軸方向の生加速度（32Hz*15min）} & 28799 & 不明 \\ \hline
-    \texttt{} & \texttt{身体運動ベクトルの大きさ（32Hz*15min）} & 28799 & 不明 \\ \hline
-    \texttt{} & \texttt{x軸方向の加速度の重力成分（32Hz*15min）} & 28799 & 不明 \\ \hline
-    \texttt{} & \texttt{y軸方向の加速度の重力成分（32Hz*15min）} & 28799 & 不明 \\ \hline
-    \texttt{} & \texttt{z軸方向の加速度の重力成分（32Hz*15min）} & 28799 & 不明 \\ \hline
-    \texttt{} & \texttt{x軸方向の身体運動成分（32Hz*15min）} & 28799 & 不明 \\ \hline
-    \texttt{} & \texttt{y軸方向の身体運動成分（32Hz*15min）} & 28799 & 不明 \\ \hline
-    \texttt{} & \texttt{z軸方向の身体運動成分（32Hz*15min）} & 28799 & 不明 \\ \hline
-
-    \texttt{data\_N\_E4\_eda.h5} & \texttt{感情計測直前の皮膚電位データ（4Hz*15min）} & (1, 3599)   & 不明 \\ \hline
-    \texttt{data\_N\_E4\_rri.h5} & \texttt{感情計測直前の心拍間隔データ（4Hz*15min）} & (1, 3600)   & 秒 \\ \hline
-    \texttt{data\_N\_E4\_temp.h5} & \texttt{感情計測直前の皮膚温度データ（4Hz*15min）} & (1, 3599)   & 摂氏温度 \\ \hline
-  \end{tabular}
-  %\caption{サンプル HDF5 ファイルのデータ概要}
-  %\label{tab:h5_overview}
-\end{table}
-
-
-対応するタイムスタンプのデータは、「all-grid-data-extracted2025」から取得できる。
-計測ファイル名が「data-N-E4-act.h5」であれば対応するタイムスタンプはシートのN行目を参照すればよい。
-
-\subsection*{簡易解析}
-全被験者のデータをもとに簡単な解析を行う予定だったが、実行環境への全計測データのコピーが丸一日以上かかるため間に合わなかった。次回のToDoとする。
-
-\subsection*{次回のToDo}
 \begin{itemize}
-  \item データの傾向を理解するための簡単な解析（一日の計測頻度の分散等）
-  \item どんな回帰による予測が良いか、データの性質を踏まえて考察
+\item 固定効果：全被験者に共通した時間帯カテゴリの効果
+\item ランダム効果：被験者ごとのベースラインの個人差
 \end{itemize}
+
+\vspace{2ex}
+\noindent \textbf{【結果の解釈】}
+
+\begin{itemize}
+\item 固定効果：被験者個人差を除いた時間帯別の平均的なArousal・Valenceスコア
+\item ランダム効果の分散：被験者間のベースラインの個人差の程度
+\end{itemize}
+
+arousal ~ 1 + timeBin + (1|subjectId)
+
+valence ~ 1 + timeBin + (1|subjectId)
+
+
+\subsection*{感情スコアの可視化}
+時間帯による感情スコアの傾向を追うため、全感情計測データを時間帯カテゴリ別にプロットした（図1・2）。
+
+\vspace{1ex}
+\noindent \textbf{【注意】} 感情スコアが0–10の整数値のため、データポイントが重ならないよう±0.5 のジッタリングを適用している。
+
+\begin{figure}[H]
+  \centering
+  \begin{minipage}{0.4\columnwidth}
+     \centering
+     \includegraphics[width=\columnwidth]{/home/mori/projects/affective-forecast/R-workspace/arousal_by_time.png}
+     \caption{Arousalの時間帯カテゴリ別分布（ジッタあり）\\y軸：Arousalスコア（0–10の整数値に±0.5ジッタ適用）}
+  \end{minipage}
+%
+  \begin{minipage}{0.4\columnwidth}
+     \centering
+     \includegraphics[width=\columnwidth]{/home/mori/projects/affective-forecast/R-workspace/valence_by_time.png}
+     \caption{Valenceの時間帯カテゴリ別分布（ジッタあり）\\y軸：Valenceスコア（0–10の整数値に±0.5ジッタ適用）}
+  \end{minipage}
+\end{figure}
+
+\subsection*{感情スコアの固定効果の可視化}
+線形混合モデルで推定した固定効果（時間帯別の推定平均値）とその標準誤差を以下に示す（図3・4）。
+
+\vspace{1ex}
+\noindent \textbf{【読み方】} エラーバーは95％信頼区間を表し、バーが重ならない時間帯間には有意差がある可能性が高い。
+
+\begin{figure}[H]
+  \centering
+  \begin{minipage}{0.4\columnwidth}
+     \centering
+     \includegraphics[width=\columnwidth]{/home/mori/projects/affective-forecast/R-workspace/arousal_by_timebin.png}
+     \caption{時間帯別 Arousal の推定平均値（固定効果）および標準誤差（SE）}
+  \end{minipage}
+%
+  \begin{minipage}{0.4\columnwidth}
+     \centering
+     \includegraphics[width=\columnwidth]{/home/mori/projects/affective-forecast/R-workspace/valence_by_timebin.png}
+     \caption{時間帯別 Valence の推定平均値（固定効果）および標準誤差（SE）}
+  \end{minipage}
+\end{figure}
+
+
+\subsection*{その他メタデータをカテゴリ変数として考慮}
+基本モデルでは時間帯のみを説明変数としていたが、被験者の個人特性（メタデータ）を追加することで、より精度の高い推定が可能か検討した。
+
+\vspace{2ex}
+\noindent \textbf{【追加したメタデータ】}
+
+\begin{itemize}
+\item 性別（男性・女性）
+
+\item 年齢（10歳単位でカテゴリ化）
+
+\item 楽観性（質問票の楽観的設問に対する平均スコアを四捨五入で1~4の整数化）
+
+\item 悲観性（質問票の悲観的設問に対する平均スコアを四捨五入で1~4の整数化）
+
+\end{itemize}
+
+\vspace{2ex}
+以下に、各メタデータを考慮したモデルの推定結果を示す。
+
+\vspace{3ex}
+\subsection*{モデル比較による効果の検証}
+
+各メタデータを追加したモデルの性能をAIC（Akaike Information Criterion）で比較した。AICが小さいほど良いモデルであり、ベースモデル（①）からのΔAICで改善度を評価した。
+
+\vspace{2ex}
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|l|r|r|r|r|}
+\hline
+モデル & 固定効果の追加 & AIC (arousal) & ΔAIC vs ① & AIC (valence) & ΔAIC vs ① \\
+\hline
+① & time\_bin & \textbf{115,599.8} & 0.0 & \textbf{116,106.1} & 0.0 \\
+② & + gender & 115,601.7 & +1.9 & \textbf{116,103.0} & \textbf{−3.1} \\
+③ & + age & 115,605.5 & +5.7 & 116,111.7 & +5.6 \\
+④ & + mean\_optimism & 115,601.9 & +2.1 & 116,107.0 & +0.9 \\
+⑤ & + mean\_pessimism & 115,604.9 & +5.1 & 116,110.4 & +4.3 \\
+\hline
+\end{tabular}
+\caption{各メタデータを追加したモデルのAIC比較}
+\end{table}
+
+\vspace{2ex}
+\noindent \textbf{【要点】}
+
+\begin{itemize}
+\item \textbf{valence}は②（+gender）でのみAICが有意に改善（−3.1）
+\item それ以外はAICが上昇または微増で、情報量的には\textbf{追加メリットなし}
+\item arousalについては、すべてのメタデータ追加でAICが悪化
+\item 性別のみがvalence推定に有効な追加情報を提供
+\end{itemize}
+
+\vspace{3ex}
+\subsubsection*{性別による効果}
+\begin{figure}[H]
+  \centering
+  \begin{minipage}{0.4\columnwidth}
+     \centering
+     \includegraphics[width=\columnwidth]{/home/mori/projects/affective-forecast/R-workspace/arousal_by_timebin_and_gender.png}
+     \caption{性別を考慮したArousal の推定平均値}
+  \end{minipage}
+%
+  \begin{minipage}{0.4\columnwidth}
+     \centering
+     \includegraphics[width=\columnwidth]{/home/mori/projects/affective-forecast/R-workspace/valence_by_timebin_and_gender.png}
+     \caption{性別を考慮したValence の推定平均値}
+  \end{minipage}
+\end{figure}
+
+\vspace{3ex}
+\subsubsection*{年齢による効果}
+\begin{figure}[H]
+  \centering
+  \begin{minipage}{0.4\columnwidth}
+     \centering
+     \includegraphics[width=\columnwidth]{/home/mori/projects/affective-forecast/R-workspace/arousal_by_timebin_and_age.png}
+     \caption{年齢を考慮したArousal の推定平均値}
+  \end{minipage}
+%
+  \begin{minipage}{0.4\columnwidth}
+     \centering
+     \includegraphics[width=\columnwidth]{/home/mori/projects/affective-forecast/R-workspace/valence_by_timebin_and_age.png}
+     \caption{年齢を考慮したValence の推定平均値}
+  \end{minipage}
+\end{figure}
+
+\vspace{3ex}
+\subsubsection*{楽観性による効果}
+\begin{figure}[H]
+  \centering
+  \begin{minipage}{0.4\columnwidth}
+     \centering
+     \includegraphics[width=\columnwidth]{/home/mori/projects/affective-forecast/R-workspace/arousal_by_timebin_and_meanoptimism.png}
+     \caption{楽観性を考慮したArousal の推定平均値}
+  \end{minipage}
+%
+  \begin{minipage}{0.4\columnwidth}
+     \centering
+     \includegraphics[width=\columnwidth]{/home/mori/projects/affective-forecast/R-workspace/valence_by_timebin_and_meanoptimism.png}
+     \caption{楽観性を考慮したValence の推定平均値}
+  \end{minipage}
+\end{figure}
+
+\vspace{3ex}
+\subsubsection*{悲観性による効果}
+\begin{figure}[H]
+  \centering
+  \begin{minipage}{0.4\columnwidth}
+     \centering
+     \includegraphics[width=\columnwidth]{/home/mori/projects/affective-forecast/R-workspace/arousal_by_timebin_and_meanpessimism.png}
+     \caption{悲観性を考慮したArousal の推定平均値}
+  \end{minipage}
+%
+  \begin{minipage}{0.4\columnwidth}
+     \centering
+     \includegraphics[width=\columnwidth]{/home/mori/projects/affective-forecast/R-workspace/valence_by_timebin_and_meanpessimism.png}
+     \caption{悲観性を考慮したValence の推定平均値}
+  \end{minipage}
+\end{figure}
+
 
 
 

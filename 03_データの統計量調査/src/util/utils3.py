@@ -47,6 +47,22 @@ def get_hour_from_unix_time(epoch: int,tz_offset_hours: int = 9) -> str:
     dt_local = dt_utc + timedelta(hours=tz_offset_hours)
     return dt_local.hour
 
+def get_hour_minute_from_unix_time(epoch: int,tz_offset_hours: int = 9) -> str:
+    """
+    Unix時刻から時間（0-23）を取得
+    
+    Args:
+        unix_time: Unix時刻（整数）
+    
+    Returns:
+        int: 時間（0-23）
+    """
+    # UTC の datetime
+    dt_utc = datetime.fromtimestamp(epoch, tz=timezone.utc)
+    # ローカルタイムに調整
+    dt_local = dt_utc + timedelta(hours=tz_offset_hours)
+    return dt_local.hour, dt_local.minute
+
 
 
 def is_time_of_day_match(unix_time: int, hour_condition) -> bool:
