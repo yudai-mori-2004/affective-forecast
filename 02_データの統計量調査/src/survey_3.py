@@ -70,7 +70,7 @@ if __name__ == "__main__":
                     datas=[m],
                     data_kind=kind, 
                     data_row=0, 
-                    data_range=data_range,
+                    # data_range=data_range,
                     save_at=f"{output_path_max}/{m["subID"]}-{kind}-{m["date"]}")
                 print(f"Process: {kind} max: {i + 1}/{len(max_valence)}")
             
@@ -84,6 +84,6 @@ if __name__ == "__main__":
                     datas=[n],
                     data_kind=kind, 
                     data_row=0, 
-                    data_range=data_range,
+                    # data_range=data_range,
                     save_at=f"{output_path_min}/{n["subID"]}-{kind}-{n["date"]}")
                 print(f"Process: {kind} min: {i + 1}/{len(min_valence)}")
