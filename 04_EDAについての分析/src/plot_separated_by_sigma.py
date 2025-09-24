@@ -23,7 +23,7 @@ if __name__ == "__main__":
     data_names.sort(key=lambda x: int(x.split("_")[1]))
     sample_data_names = data_names[:10]
 
-    for sigma_sec in [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0]:
+    for sigma_sec in [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0]:
         for i, name in enumerate(sample_data_names):
             eda_file_name = f"{name}_eda.h5"
             eda = load_h5_data(f"{data_path}/{eda_file_name}")
@@ -35,7 +35,11 @@ if __name__ == "__main__":
                 # 4HzのEDA信号に,40サンプル幅(10秒間), 標準偏差sigma_sec秒のガウシアンフィルタをかける 
                 Fs = 4
                 sigma_samp = sigma_sec * Fs  # サンプル単位でσを計算 (=1.6)
-                y_smooth = gaussian_filter1d(y, sigma=sigma_samp, mode="nearest") # 端の処理は、端点の値を繰り返す処理
+
+                if sigma_sec == 0.0:
+                    y_smooth = y
+                else:
+                    y_smooth = gaussian_filter1d(y, sigma=sigma_samp, mode="nearest") # 端の処理は、端点の値を繰り返す処理
 
                 signals = nk.eda_phasic(y_smooth, sampling_rate=Fs, method="cvxeda") # 分解だけcvxEDA
                 tonic  = signals['EDA_Tonic'].to_numpy()
@@ -47,11 +51,11 @@ if __name__ == "__main__":
                 plt.plot(x, tonic, linewidth=0.5, label="Tonic")
                 plt.plot(x, phasic, linewidth=0.5, label="Phasic")
                 plt.xlabel("Time (minutes)")
-                plt.ylabel(f"Gaussian filtered EDA (μS)")
+                plt.ylabel(f"EDA signals (μS)")
 
                 plt.legend()
                 plt.grid(True, alpha=0.3)
-                plt.title(f"{name} Separated EDA plot")
+                plt.title(f"cvxEDA (σ={sigma_sec}s  {name})")
                 
                 plt.tight_layout()
                 plt.savefig(f"{output_path}/{name}/sigma_{sigma_sec}s.svg")
