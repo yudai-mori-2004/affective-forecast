@@ -98,42 +98,46 @@ if __name__ == "__main__":
     data_names.sort(key=lambda x: int(x.split("_")[1]))
     sample_data_names = data_names[:10]
 
-    for i, name in enumerate(sample_data_names):
-        eda_file_name = f"{name}_eda.h5"
-        eda = load_h5_data(f"{data_path}/{eda_file_name}")
+    # recovery_time_maxの比較パターン
+    recovery_times = [5, 10, 20, 40]
 
-        if eda is not None and eda.shape[1] > 3000:
-            x = np.linspace(0, 15, eda.shape[1])
-            y = np.asarray(eda[0], dtype=float)
+    for recovery_time in recovery_times:
+        for i, name in enumerate(sample_data_names):
+            eda_file_name = f"{name}_eda.h5"
+            eda = load_h5_data(f"{data_path}/{eda_file_name}")
 
-            Fs = 4
+            if eda is not None and eda.shape[1] > 3000:
+                x = np.linspace(0, 15, eda.shape[1])
+                y = np.asarray(eda[0], dtype=float)
 
-            # 1. 急落&復帰パターンの除去
-            y_drop_filtered = detect_and_remove_drop_recovery(y, Fs)
+                Fs = 4
 
-            # 2. ローパスフィルタ (0.25Hz以上をカット)
-            y_lowpass = lowpass_filter(y_drop_filtered, 0.25, Fs)
+                # 1. 急落&復帰パターンの除去 (recovery_time_maxを変更)
+                y_drop_filtered = detect_and_remove_drop_recovery(y, Fs, recovery_time_max=recovery_time)
 
-            # 3. cvxEDAで分離
-            signals = nk.eda_phasic(y_lowpass, sampling_rate=Fs, method="cvxeda")
-            tonic = signals['EDA_Tonic'].to_numpy()
-            phasic = signals['EDA_Phasic'].to_numpy()
+                # 2. ローパスフィルタ (0.25Hz以上をカット)
+                y_lowpass = lowpass_filter(y_drop_filtered, 0.25, Fs)
 
-            os.makedirs(f"{output_path}/{name}", exist_ok=True)
+                # 3. cvxEDAで分離
+                signals = nk.eda_phasic(y_lowpass, sampling_rate=Fs, method="cvxeda")
+                tonic = signals['EDA_Tonic'].to_numpy()
+                phasic = signals['EDA_Phasic'].to_numpy()
 
-            plt.figure(figsize=(12, 8))
-            plt.plot(x, y_lowpass, linewidth=0.5, linestyle='--', label="Filtered EDA (Drop Recovery + Lowpass)")
-            plt.plot(x, tonic, linewidth=0.5, label="SCL (Tonic)")
-            plt.plot(x, phasic, linewidth=0.5, label="SCR (Phasic)")
-            plt.xlabel("Time (minutes)")
-            plt.ylabel(f"EDA signals (μS)")
+                os.makedirs(f"{output_path}/{name}", exist_ok=True)
 
-            plt.legend()
-            plt.grid(True, alpha=0.3)
-            plt.title(f"Pattern 5: Drop Recovery Detection + Lowpass + cvxEDA ({name})")
+                plt.figure(figsize=(12, 8))
+                plt.plot(x, y_lowpass, linewidth=0.5, linestyle='--', label="Filtered EDA (Drop Recovery + Lowpass)")
+                plt.plot(x, tonic, linewidth=0.5, label="SCL (Tonic)")
+                plt.plot(x, phasic, linewidth=0.5, label="SCR (Phasic)")
+                plt.xlabel("Time (minutes)")
+                plt.ylabel(f"EDA signals (μS)")
 
-            plt.tight_layout()
-            plt.savefig(f"{output_path}/{name}/pattern5.svg")
-            plt.close()
+                plt.legend()
+                plt.grid(True, alpha=0.3)
+                plt.title(f"Pattern 5: Drop Recovery Detection + Lowpass + cvxEDA (recovery_time={recovery_time}s, {name})")
 
-            print(f"Saved Pattern 5 - {i} images")
+                plt.tight_layout()
+                plt.savefig(f"{output_path}/{name}/pattern5_recovery_{recovery_time}s.svg")
+                plt.close()
+
+                print(f"Saved Pattern 5 - recovery_time={recovery_time}s - {i} images")
