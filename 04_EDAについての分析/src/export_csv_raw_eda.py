@@ -22,7 +22,7 @@ if __name__ == "__main__":
         eda_file_name = f"{name}_eda.h5"
         eda = load_h5_data(f"{data_path}/{eda_file_name}")
 
-        if eda is not None and eda.shape[1] > 3000:
+        if eda is not None:
             time = np.linspace(0, 15, eda.shape[1])
             eda_values = eda[0]
             
