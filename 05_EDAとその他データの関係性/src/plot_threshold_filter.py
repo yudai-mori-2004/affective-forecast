@@ -100,4 +100,5 @@ if __name__ == "__main__":
 
             plt.tight_layout()
             plt.savefig(f"{output_path}/{name}/threshold.svg")
+            plt.savefig(f"{output_path}/{name}/threshold.png")
             plt.close()

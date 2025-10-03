@@ -91,4 +91,5 @@ if __name__ == "__main__":
 
             plt.tight_layout()
             plt.savefig(f"{output_path}/{name}/simple_median.svg")
+            plt.savefig(f"{output_path}/{name}/simple_median.png")
             plt.close()
