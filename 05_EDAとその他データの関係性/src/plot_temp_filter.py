@@ -105,4 +105,5 @@ if __name__ == "__main__":
 
             plt.tight_layout()
             plt.savefig(f"{output_path}/{name}/temperature.svg")
+            plt.savefig(f"{output_path}/{name}/temperature.png")
             plt.close()

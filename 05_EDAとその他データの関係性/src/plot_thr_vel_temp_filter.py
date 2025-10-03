@@ -152,4 +152,5 @@ if __name__ == "__main__":
 
             plt.tight_layout()
             plt.savefig(f"{output_path}/{name}/thr_vel_temp.svg")
+            plt.savefig(f"{output_path}/{name}/thr_vel_temp.png")
             plt.close()
