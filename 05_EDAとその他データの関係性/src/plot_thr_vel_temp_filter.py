@@ -118,30 +118,37 @@ if __name__ == "__main__":
 
             plt.figure(figsize=(12, 8))
 
-            # 全体を青でプロット（連続線）
-            plt.plot(x, y_lowpass, color='blue', label='Kept', linewidth=1, zorder=1)
-
-            # コアフィルタで除去された点の前後の線分を赤でプロット
             core_indices = np.where(core_removed_mask)[0]
-            red_label_added = False
-            for idx in core_indices:
-                label = 'Removed (core)' if not red_label_added else None
-                if idx > 0:
-                    plt.plot(x[idx-1:idx+1], y_lowpass[idx-1:idx+1], color='red', linewidth=1, zorder=3, label=label)
-                    red_label_added = True
-                if idx < len(y_lowpass) - 1:
-                    plt.plot(x[idx:idx+2], y_lowpass[idx:idx+2], color='red', linewidth=1, zorder=3, label=None)
-
-            # マージンのみで除去された点の前後の線分をオレンジでプロット
             margin_indices = np.where(margin_only_mask)[0]
-            orange_label_added = False
-            for idx in margin_indices:
-                label = 'Removed (margin)' if not orange_label_added else None
-                if idx > 0:
-                    plt.plot(x[idx-1:idx+1], y_lowpass[idx-1:idx+1], color='orange', linewidth=1, zorder=2, label=label)
-                    orange_label_added = True
-                if idx < len(y_lowpass) - 1:
-                    plt.plot(x[idx:idx+2], y_lowpass[idx:idx+2], color='orange', linewidth=1, zorder=2, label=None)
+            all_removed_indices = np.sort(np.concatenate([core_indices, margin_indices]))
+
+            for j, idx in enumerate(all_removed_indices):
+                prev_rem = all_removed_indices[j - 1] if j > 0 else -1
+                rem_start = idx - 1 if idx > 0 else -1
+                rem_end = idx + 2 if idx + 1 < len(y_lowpass) else -1
+
+                blue_label = 'Kept' if j == 0 else None
+
+                plt.plot(x[prev_rem + 1:idx], y_lowpass[prev_rem + 1:idx],
+                        color='blue', label=blue_label, linewidth=0.5)
+
+                is_core = core_removed_mask[idx]
+                color = 'red' if is_core else 'orange'
+                label_text = 'Removed (core)' if is_core else 'Removed (margin)'
+                needs_label = (is_core and j == 0) or (not is_core and j > 0 and not any(core_removed_mask[all_removed_indices[:j]]))
+
+                if rem_start >= 0:
+                    plt.plot(x[rem_start:idx + 1], y_lowpass[rem_start:idx + 1],
+                            color=color, linewidth=0.5, label=label_text if needs_label else None)
+
+                if rem_end > 0:
+                    plt.plot(x[idx:rem_end], y_lowpass[idx:rem_end],
+                            color=color, linewidth=0.5)
+
+            last_idx = all_removed_indices[-1] if len(all_removed_indices) > 0 else -1
+            last_blue_label = 'Kept' if len(all_removed_indices) == 0 else None
+            plt.plot(x[last_idx + 1:], y_lowpass[last_idx + 1:],
+                    color='blue', label=last_blue_label, linewidth=0.5)
 
             plt.xlabel("Time (minutes)")
             plt.ylabel(f"EDA (μS)")
@@ -152,5 +159,4 @@ if __name__ == "__main__":
 
             plt.tight_layout()
             plt.savefig(f"{output_path}/{name}/thr_vel_temp.svg")
-            plt.savefig(f"{output_path}/{name}/thr_vel_temp.png")
             plt.close()
