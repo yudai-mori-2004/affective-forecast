@@ -29,7 +29,7 @@ def conditional_median_filter(data, median_kernel_size, p):
         mx = min(target + int(median_kernel_size / 2), n_samples - 1)
         arr = data[mn:mx + 1]
         median = np.median(arr)
-        if median > 0 and (data[target] / median) - 1.0 < -p:
+        if median > 0 and np.abs((data[target] / median) - 1.0) > p:
             filtered_data[target] = np.nan
 
     return filtered_data
@@ -61,9 +61,20 @@ if __name__ == "__main__":
 
             Fs = 4
             median_kernel_size = 4 * Fs + 1
-            p = 0.3
+            p = 0.2
 
             y_filtered = conditional_median_filter(y, median_kernel_size, p)
+
+            # ±p%ゾーンの可視化のために中央値の配列を計算
+            median_values = np.zeros_like(y)
+            for target in range(len(y)):
+                mn = max(0, target - int(median_kernel_size / 2))
+                mx = min(target + int(median_kernel_size / 2), len(y) - 1)
+                arr = y[mn:mx + 1]
+                median_values[target] = np.median(arr)
+
+            upper_bound = median_values * (1 + p)
+            lower_bound = median_values * (1 - p)
 
             # y軸範囲を計算
             y_min, y_max = np.min(y), np.max(y)
@@ -73,25 +84,36 @@ if __name__ == "__main__":
 
             plt.figure(figsize=(12, 8))
 
-            # 除去された部分（NaN）のマスクを取得
             removed_mask = np.isnan(y_filtered)
-
-            # 全体を青でプロット（連続線）
-            plt.plot(x, y, color='blue', label='Kept', linewidth=1, zorder=1)
-
-            # 除去された点の前後の線分を赤でプロット
             removed_indices = np.where(removed_mask)[0]
-            red_label_added = False
-            for idx in removed_indices:
-                label = 'Removed (drop)' if not red_label_added else None
-                # 前の点から除去点までの線分
-                if idx > 0:
-                    plt.plot(x[idx-1:idx+1], y[idx-1:idx+1], color='red', linewidth=1, zorder=2, label=label)
-                    red_label_added = True
-                # 除去点から次の点までの線分
-                if idx < len(y) - 1:
-                    label = None  # 2つ目以降はラベルなし
-                    plt.plot(x[idx:idx+2], y[idx:idx+2], color='red', linewidth=1, zorder=2, label=label)
+
+            for j, idx in enumerate(removed_indices):
+                prev_rem = removed_indices[j - 1] if j > 0 else -1
+                rem_start = idx - 1 if idx > 0 else -1
+                rem_end = idx + 2 if idx + 1 < len(y) else -1
+
+                blue_label = 'Kept' if j == 0 else None
+                red_label = 'Removed (drop)' if j == 0 else None
+
+                plt.plot(x[prev_rem + 1:idx], y[prev_rem + 1:idx],
+                        color='blue', label=blue_label, linewidth=0.5)
+
+                if rem_start >= 0:
+                    plt.plot(x[rem_start:idx + 1], y[rem_start:idx + 1],
+                            color='red', linewidth=0.5, label=red_label)
+
+                if rem_end > 0:
+                    plt.plot(x[idx:rem_end], y[idx:rem_end],
+                            color='red', linewidth=0.5)
+
+            last_idx = removed_indices[-1] if len(removed_indices) > 0 else -1
+            last_blue_label = 'Kept' if len(removed_indices) == 0 else None
+            plt.plot(x[last_idx + 1:], y[last_idx + 1:],
+                    color='blue', label=last_blue_label, linewidth=0.5)
+
+            # ±p%ゾーンのラインをプロット
+            plt.plot(x, upper_bound, color='gray', linestyle='--', linewidth=0.5, alpha=0.7, label=f'+{int(p*100)}% zone')
+            plt.plot(x, lower_bound, color='gray', linestyle='--', linewidth=0.5, alpha=0.7, label=f'-{int(p*100)}% zone')
 
             plt.xlabel("Time (minutes)")
             plt.ylabel(f"EDA (μS)")

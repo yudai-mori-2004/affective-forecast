@@ -355,6 +355,47 @@ def get_filenames_from_uuids(uuids: List[str]) -> List[str]:
     return filenames
 
 
+def get_affective_datas_from_uuids(uuids: List[str]) -> List[object]:
+    """
+    uuidのリストからファイル名,Arousal,Valenceのリストを取得
+    
+    Args:
+        uuids: uuidのリスト
+    
+    Returns:
+        List[object]: ファイル名,Arousal,Valenceのリスト
+    """
+    index_dir = "/home/mori/projects/affective-forecast/datas/index"
+    uuid_filename_path = os.path.join(index_dir, "uuid_filename_mapping.json")
+    uuid_arousal_path = os.path.join(index_dir, "arousal.json")
+    uuid_valence_path = os.path.join(index_dir, "valence.json")
+    
+    with open(uuid_filename_path, 'r', encoding='utf-8') as f:
+        uuid_filename_list = json.load(f)
+    with open(uuid_arousal_path, 'r', encoding='utf-8') as f:
+        uuid_arousal_list = json.load(f)
+    with open(uuid_valence_path, 'r', encoding='utf-8') as f:
+        uuid_valence_list = json.load(f)
+    
+    # uuidでソート済みなのでバイナリサーチで高速検索
+    datas = []
+    uuid_to_filename = {entry["uuid"]: entry["filename"] for entry in uuid_filename_list}
+    uuid_to_arousal = {entry["uuid"]: entry["field_value"] for entry in uuid_arousal_list}
+    uuid_to_valence = {entry["uuid"]: entry["field_value"] for entry in uuid_valence_list}
+    
+    for uuid in uuids:
+        if uuid in uuid_to_filename:
+            datas.append({
+                "filename":uuid_to_filename[uuid],
+                "arousal":uuid_to_arousal[uuid],
+                "valence":uuid_to_valence[uuid]
+            })
+        else:
+            print(f"Warning: UUID not found: {uuid}")
+    
+    return datas
+
+
 
 
 def search_and_get_filenames(search_conditions: Dict) -> List[str]:
@@ -377,6 +418,28 @@ def search_and_get_filenames(search_conditions: Dict) -> List[str]:
     """
     uuids = search_by_conditions(search_conditions)
     return get_filenames_from_uuids(uuids)
+
+def search_and_get_filenames_affection(search_conditions: Dict) -> List[str]:
+    """
+    検索条件に基づいてマッチするファイル名のリストを取得
+    
+    Args:
+        search_conditions: 検索条件の辞書
+    
+    Returns:
+        List[str]: マッチするファイル名のリスト
+    
+    Example:
+        search_conditions = {
+            "valence": [1, 3],      # valenceが1以上3以下
+            "arousal": 2,           # arousalが2
+            "gender": 1             # genderが1
+        }
+        filenames = search_and_get_filenames(search_conditions)
+    """
+    uuids = search_by_conditions(search_conditions)
+    file_names = get_filenames_from_uuids(uuids)
+
 
 
 
