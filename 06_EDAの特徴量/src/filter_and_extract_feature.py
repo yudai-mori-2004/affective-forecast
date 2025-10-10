@@ -4,11 +4,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import neurokit2 as nk
-from filter_definition import rri_filter, conditional_median_filter
 from scipy import signal
 from scipy.ndimage import median_filter
 from scipy.stats import skew, kurtosis, iqr
-from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 
 
@@ -43,7 +41,7 @@ if __name__ == "__main__":
         eda_h5 = load_h5_data(f"{data_path}/{eda_file_name}")
         temp_h5 = load_h5_data(f"{data_path}/{temp_file_name}")
 
-        if eda_h5 is not None and temp_h5 is not None and eda_h5.shape[1] >= 3599:
+        if eda_h5 is not None and temp_h5 is not None and eda_h5.shape[1] >= 3599 and eda_h5.shape[1] == temp_h5.shape[1]:
             x = np.linspace(0, 15, eda_h5.shape[1])
             eda = np.asarray(eda_h5[0], dtype=float)
             temp = np.asarray(temp_h5[0], dtype=float)
