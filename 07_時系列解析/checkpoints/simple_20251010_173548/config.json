@@ -1,0 +1,19 @@
+{
+  "term": "term1",
+  "target_type": "arousal",
+  "use_eda": 1,
+  "use_acc": 0,
+  "use_temp": 0,
+  "use_rri": 0,
+  "model": "simple",
+  "dropout": 0.5,
+  "batch_size": 32,
+  "epochs": 100,
+  "lr": 0.001,
+  "weight_decay": 1e-05,
+  "patience": 30,
+  "save_dir": "./checkpoints",
+  "log_dir": "./logs",
+  "in_channels": 1,
+  "timestamp": "20251010_173548"
+}
