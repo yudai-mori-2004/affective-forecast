@@ -291,15 +291,15 @@ if __name__ == "__main__":
 
     # EDA関連
     parser.add_argument("--use_eda", type=int, default=0, help="Use raw EDA data")
-    parser.add_argument("--use_eda_masked", type=int, default=0, help="Use masked EDA data")
-    parser.add_argument("--use_scr", type=int, default=0, help="Use SCR (Phasic) data")
-    parser.add_argument("--use_scl", type=int, default=0, help="Use SCL (Tonic) data")
+    parser.add_argument("--use_eda_masked", type=int, default=1, help="Use masked EDA data")
+    parser.add_argument("--use_scr", type=int, default=1, help="Use SCR (Phasic) data")
+    parser.add_argument("--use_scl", type=int, default=1, help="Use SCL (Tonic) data")
 
     # 加速度関連
-    parser.add_argument("--use_acc_x", type=int, default=0, help="Use accelerometer X-axis")
-    parser.add_argument("--use_acc_y", type=int, default=0, help="Use accelerometer Y-axis")
-    parser.add_argument("--use_acc_z", type=int, default=0, help="Use accelerometer Z-axis")
-    parser.add_argument("--use_acc_mag", type=int, default=1, help="Use accelerometer magnitude")
+    parser.add_argument("--use_acc_x", type=int, default=1, help="Use accelerometer X-axis")
+    parser.add_argument("--use_acc_y", type=int, default=1, help="Use accelerometer Y-axis")
+    parser.add_argument("--use_acc_z", type=int, default=1, help="Use accelerometer Z-axis")
+    parser.add_argument("--use_acc_mag", type=int, default=0, help="Use accelerometer magnitude")
 
     # その他
     parser.add_argument("--use_temp", type=int, default=1, help="Use temperature data")
